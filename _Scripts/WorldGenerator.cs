@@ -16,6 +16,9 @@ public class WorldGenerator : MonoBehaviour
 
     public TextMesh textPrefab;
 
+    public float noiseThresholdMin = 0.45f;
+    public float noiseThresholdMax = 0.55f;
+
     private float GetNoiseValue(int x, int y)
     {
         return amplitude * Mathf.PerlinNoise(x * frequency, y * frequency);
@@ -50,7 +53,30 @@ public class WorldGenerator : MonoBehaviour
 
             for (int y = 0; y <= noiseEndValue; y++)
             {
+                worldRenderer.SetBackgroundTile(x, y, SelectDarkTile(y, noiseEndValue, noiseStoneInt));
+                var noisePerlin2D = SumNoise(perlin2DData.offset.x + x, y, perlin2DData);
+                if (y >= perlin2DData.noiseRangeMin && y <= perlin2DData.noiseRangeMax && noisePerlin2D > noiseThresholdMin && noisePerlin2D < noiseThresholdMax)
+                {
+                    //worldRenderer.SetPerlin2d(x, y, blockData.perlin2D);
+                    continue;
+                }
                 worldRenderer.SetGroundTile(x, y, SelectTile(y, noiseEndValue, noiseStoneInt));
+            }
+        }
+    }
+
+    public void GenerateMap2D()
+    {
+        worldRenderer.ClearPerlind2DTilemap();
+        for (int x = -1 * mapLength; x < mapLength; x++)
+        {
+            for (int y = perlin2DData.noiseRangeMin; y < perlin2DData.noiseRangeMax; y++)
+            {
+                var noise = SumNoise(perlin2DData.offset.x + x, y, perlin2DData);
+                if (noise > noiseThresholdMin && noise < noiseThresholdMax)
+                {
+                    worldRenderer.SetPerlin2d(x, y, blockData.perlin2D);
+                }
             }
         }
     }
@@ -100,5 +126,15 @@ public class WorldGenerator : MonoBehaviour
             return blockData.dirtGrass;
         }
         return blockData.dirtTile;
+    }
+
+    private TileBase SelectDarkTile(int y, int noiseValue, int stoneHeight)
+    {
+
+        if (y >= stoneHeight)
+        {
+            return blockData.stoneDark;
+        }
+        return blockData.dirtDark;
     }
 }
